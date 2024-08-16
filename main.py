@@ -30,11 +30,9 @@ xx4 = np.hstack((np.array([X[:, -1:, :].flatten(), ]).T, np.array([Y[:, -1:, :].
 xx5 = np.hstack((np.array([X[-1:, :, :].flatten(), ]).T, np.array([Y[-1:, :, :].flatten(), ]).T,
                 np.array([T[-1:, :, :].flatten(), ]).T))
 
-X_Robin = np.vstack([xx2, xx3, xx4, xx5])
+X_Collocation = np.vstack([xx1, xx2, xx3, xx4, xx5])
 
-#sources = np.array([[-2.5, -1.], [-2.5,1.], [-1, 2.5], [1.,2.5], [2.5, -1], [2.5,1], [-1,-2.5],[1,-2.5]])
 u_sources = []
-#X_sources = []
 for source in range(16):
     U = np.load("Input/U_" + str(source) + ".npy")
     u1 = np.array([U[:, :, 0:1].flatten(), ]).T
@@ -42,12 +40,11 @@ for source in range(16):
     u3 = np.array([U[0:1, :, :].flatten(), ]).T
     u4 = np.array([U[:, -1, :].flatten(), ]).T
     u5 = np.array([U[-1, :, :].flatten(), ]).T
-    u_Dirichlet = np.vstack([u1, u2, u3, u4, u5])
-    u_sources.append(u_Dirichlet)
+    u_Collocation = np.vstack([u1, u2, u3, u4, u5])
+    u_sources.append(u_Collocation)
 
-X_Dirichlet = np.vstack([xx1, xx2, xx3, xx4, xx5])
 model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, 16)
-model.train(5000, 20000, X_Dirichlet, u_sources, X_star, 10, 2500, 2500)
+model.train(5000, 20000, X_Collocation, u_sources, X_star, 10, 2500, 2500)
 U_pred, F_pred, Diff_coeff = model.predict(X_star)
 np.save("Output/U_0_pred.npy",U_pred)
 np.save("Output/F_0_pred.npy",F_pred)

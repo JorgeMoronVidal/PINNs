@@ -67,9 +67,9 @@ class PINN:
         dudn = (+bool_top*u_y - bool_bottom * u_y - bool_left*u_x + bool_right*u_x)/np.sqrt(2.)
         return 2*self.diff_coeff(x,y)*dudn + u
 
-    def net_dirichlet_bc(self, x, y, t):
+    def net_collocation_bc(self, x, y, t):
         u = self.dnns[self.source_index](torch.cat([x, y, t], dim=1))
-        return self.u_Dirichlet[self.source_index] - u
+        return self.u_collocation[self.source_index] - u
 
     def net_f(self, x, y, t):
         """ The pytorch autograd version of calculating residual """
@@ -122,26 +122,26 @@ class PINN:
 
     def loss_func(self):
         self.optimizer.zero_grad()
-        loss_dirich = 0.
+        loss_colloc = 0.
         loss_robin = 0.
         loss_inner = 0.
         diff_coeff = self.diff_coeff(self.x_f, self.y_f)
         outliers = torch.lt(diff_coeff, 1.).int()
-        loss_outliers = torch.mean((outliers * (diff_coeff - 1.)) ** 2) * len(self.u_Dirichlet)
-        for self.source_index in range(len(self.u_Dirichlet)):
-            dirich_bc = self.net_dirichlet_bc(self.x_Dirichlet, self.y_Dirichlet, self.t_Dirichlet)
+        loss_outliers = torch.mean((outliers * (diff_coeff - 1.)) ** 2) * len(self.u_collocation)
+        for self.source_index in range(len(self.u_collocation)):
+            colloc_bc = self.net_collocation_bc(self.x_collocation, self.y_collocation, self.t_collocation)
             robin_bc = self.net_robin_bc(self.x_Robin, self.y_Robin, self.t_Robin)
             f_pred = self.net_f(self.x_f, self.y_f, self.t_f)
-            # loss_boundary = torch.mean(torch.cat((robin_bc, dirich_bc)) ** 2)
-            loss_dirich += torch.mean(dirich_bc ** 2)
+            # loss_boundary = torch.mean(torch.cat((robin_bc, colloc_bc)) ** 2)
+            loss_colloc += torch.mean(colloc_bc ** 2)
             loss_robin += torch.mean(robin_bc ** 2)
             loss_inner += torch.mean(f_pred ** 2)
 
-        loss = (loss_dirich + loss_robin + loss_inner + loss_outliers)
+        loss = (loss_colloc + loss_robin + loss_inner + loss_outliers)
         if self.epoch % 250 == 0:
             print(
                 '%d, %.5e, %.5e. %.5e, %.5e, %.5e' % (
-                    self.epoch, loss.item(), loss_outliers.item(), loss_dirich.item(), loss_robin.item(),
+                    self.epoch, loss.item(), loss_outliers.item(), loss_colloc.item(), loss_robin.item(),
                     loss_inner.item())
             )
             diff_coeff = self.diff_coeff(self.x_eval, self.y_eval)
@@ -162,7 +162,7 @@ class PINN:
         loss.backward()
         return loss
 
-    def update_training_sets(self, N_Robin, N_f, X_Dirichlet, u_Dirichlet_array):
+    def update_training_sets(self, N_Robin, N_f, X_collocation, u_collocation_array):
         X_f_train = lhs(3, N_f)
         X_f_train[:, 0] = self.left_boundary + (self.right_boundary - self.left_boundary) * X_f_train[:, 0]
         X_f_train[:, 1] = self.bottom_boundary + (self.top_boundary - self.bottom_boundary) * X_f_train[:, 1]
@@ -176,23 +176,23 @@ class PINN:
         X_Robin[step:2*step, 0] = self.right_boundary
         X_Robin[2*step:3*step, 1] = self.top_boundary
         X_Robin[3*step:-1, 1] = self.bottom_boundary
-        X_u_Dirichlet = X_Dirichlet
+        X_u_collocation = X_collocation
         self.x_Robin = torch.tensor(X_Robin[:, 0:1], requires_grad=True).float().to(self.device)
         self.y_Robin = torch.tensor(X_Robin[:, 1:2], requires_grad=True).float().to(self.device)
         self.t_Robin = torch.tensor(X_Robin[:, 2:3], requires_grad=True).float().to(self.device)
-        self.x_Dirichlet = torch.tensor(X_u_Dirichlet[:, 0:1], requires_grad=True).float().to(self.device)
-        self.y_Dirichlet = torch.tensor(X_u_Dirichlet[:, 1:2], requires_grad=True).float().to(self.device)
-        self.t_Dirichlet = torch.tensor(X_u_Dirichlet[:, 2:3], requires_grad=True).float().to(self.device)
+        self.x_collocation = torch.tensor(X_u_collocation[:, 0:1], requires_grad=True).float().to(self.device)
+        self.y_collocation = torch.tensor(X_u_collocation[:, 1:2], requires_grad=True).float().to(self.device)
+        self.t_collocation = torch.tensor(X_u_collocation[:, 2:3], requires_grad=True).float().to(self.device)
         self.x_f = torch.tensor(X_f_train[:, 0:1], requires_grad=True).float().to(self.device)
         self.y_f = torch.tensor(X_f_train[:, 1:2], requires_grad=True).float().to(self.device)
         self.t_f = torch.tensor(X_f_train[:, 2:3], requires_grad=True).float().to(self.device)
-        self.u_Dirichlet = []
-        for u_Dirichlet in u_Dirichlet_array :
-            #u_Dirichlet_aux = u_Dirichlet[idx_Dirichlet, :]
-            u_Dirichlet_aux = u_Dirichlet
-            self.u_Dirichlet.append(torch.tensor(u_Dirichlet_aux).float().to(self.device))
+        self.u_collocation = []
+        for u_collocation in u_collocation_array :
+            #u_collocation_aux = u_collocation[idx_collocation, :]
+            u_collocation_aux = u_collocation
+            self.u_collocation.append(torch.tensor(u_collocation_aux).float().to(self.device))
 
-    def train(self, N_Robin, N_f, X_Dirichlet, u_Dirichlet, X_Eval, trainsets, epochs_ADAM, epochs_LBFGS):
+    def train(self, N_Robin, N_f, X_collocation, u_collocation, X_Eval, trainsets, epochs_ADAM, epochs_LBFGS):
         self.x_eval = torch.tensor(np.array([X_Eval[:,0:1].reshape(51,51,251)[:,:,0].flatten(),]).T,requires_grad = True).float().to(self.device)
         self.y_eval = torch.tensor(np.array([X_Eval[:,1:2].reshape(51,51,251)[:,:,0].flatten(),]).T, requires_grad = True).float().to(self.device)
         for dnn in self.dnns:
@@ -204,7 +204,7 @@ class PINN:
             for dnn in self.dnns:
                 parameters_aux = chain(parameters_aux, dnn.parameters())
             parameters_aux = chain(parameters_aux, self.dnn_D.parameters())
-            self.update_training_sets(N_Robin, N_f, X_Dirichlet, u_Dirichlet)
+            self.update_training_sets(N_Robin, N_f, X_collocation, u_collocation)
 
             self.optimizer = torch.optim.Adam(parameters_aux, lr=0.02/(1+trainset), betas=(0.9, 0.999), eps=1e-08,
                                  weight_decay=0, amsgrad=False)
