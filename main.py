@@ -30,10 +30,10 @@ xx4 = np.hstack((np.array([X[:, -1:, :].flatten(), ]).T, np.array([Y[:, -1:, :].
 xx5 = np.hstack((np.array([X[-1:, :, :].flatten(), ]).T, np.array([Y[-1:, :, :].flatten(), ]).T,
                 np.array([T[-1:, :, :].flatten(), ]).T))
 
-X_Collocation = np.vstack([xx1, xx2, xx3, xx4, xx5])
-
-u_sources = []
-for source in range(16):
+X_detectors = np.vstack([xx1, xx2, xx3, xx4, xx5])
+n_sources = 32
+u_detectors = []
+for source in range(n_sources):
     U = np.load("Input/U_" + str(source) + ".npy")
     u1 = np.array([U[:, :, 0:1].flatten(), ]).T
     u2 = np.array([U[:, 0:1, :].flatten(), ]).T
@@ -41,10 +41,15 @@ for source in range(16):
     u4 = np.array([U[:, -1, :].flatten(), ]).T
     u5 = np.array([U[-1, :, :].flatten(), ]).T
     u_Collocation = np.vstack([u1, u2, u3, u4, u5])
-    u_sources.append(u_Collocation)
+    u_detectors.append(u_Collocation)
 
-model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, 16)
-model.train(5000, 20000, X_Collocation, u_sources, X_star, 10, 2500, 2500)
+model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
+N_boundary = 5000
+N_f = 20000
+N_trainsets = 10
+epochs_ADAM = 2500
+epochs_LBFGS = 2500
+model.train(N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
 U_pred, F_pred, Diff_coeff = model.predict(X_star)
 np.save("Output/U_0_pred.npy",U_pred)
 np.save("Output/F_0_pred.npy",F_pred)
