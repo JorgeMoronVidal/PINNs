@@ -1,8 +1,8 @@
 import imageio
 images = []
 filenames = []
-for i in range(199):
-    filenames.append("s_0_1_t_" + str(i) + ".png")
+for i in range(200):
+    filenames.append("Plots/Diff_cent_" + str(i) + ".png")
 for filename in filenames:
     images.append(imageio.imread(filename))
-imageio.mimsave('movie_1.gif', images)
+imageio.mimsave('Plots/Diff_movie.gif', images)
