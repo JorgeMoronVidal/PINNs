@@ -108,11 +108,11 @@ Once all this variables have been defined, an instance of the PINN class -Which 
 
 Then the training of the NNs is done in the line
 
-    model.train(N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
-
+    model.train(N_o, N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
+ - **N_o** is the number of points chosen to evaluate $L_o$
  - **N\_boundary** is the number of points where Robin boundary conditions are checked in $L_{\partial \Omega}$. Equivalent to $N_{\partial \Omega}$ from the previous section.
  - **N_f** is the number of points inside the domain where $L_f$ is cheked. 
- - **X_star** are the points where $D^{NN}(\mathbf{x})$ is  plotted. 
+ - **X_star** are the points where $D^{NN}(\mathbf{x})$ is  plotted.
  - **N_trainsets** is the number of different trainsets that are used in the training process. 
  - **epochs_ADAM** indicates the epochs in training that are done with the ADAM optimizer.
  - **epochs_LBFGS** is the number of epochs in training that are done with the LBFGS optimizer.
@@ -130,7 +130,7 @@ Then the training of the NNs is done in the line
 
   **OUTPUTS**
 
-Two folders store the outputs of this code: The **Plots** folder for the plots that are produced during the training and the **Output** folder for the numerical files.  To supervise the training process, each 250 epochs the evaluation of $D^{NN}(\mathbf{x})$ is plotted in a regular grid to check the evolution of the algorithm.
+Two folders store the outputs of this code: The **Plots** folder for the plots that are produced during the training and the **Output** folder for the numerical files.  To supervise the training process, each 250 epochs the evaluation of $D^{NN}(\mathbf{x})$ is plotted in a regular grid to check the evolution of the algorithm. 
 
 
 
