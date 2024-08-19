@@ -31,7 +31,7 @@ xx5 = np.hstack((np.array([X[-1:, :, :].flatten(), ]).T, np.array([Y[-1:, :, :].
                 np.array([T[-1:, :, :].flatten(), ]).T))
 
 X_detectors = np.vstack([xx1, xx2, xx3, xx4, xx5])
-n_sources = 16
+n_sources = 32
 u_detectors = []
 for source in range(n_sources):
     U = np.load("Input/U_" + str(source) + ".npy")
@@ -44,11 +44,11 @@ for source in range(n_sources):
     u_detectors.append(u_Collocation)
 
 model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
-N_boundary = 500
-N_f = 2000
-N_o = 100
+N_boundary = 5000
+N_f = 20000
+N_o = 1000
 N_trainsets = 10
-epochs_ADAM = 251
-epochs_LBFGS = 251
+epochs_ADAM = 2500
+epochs_LBFGS = 2500
 model.train(N_o,N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
 model.predict(X_star,n_sources)
