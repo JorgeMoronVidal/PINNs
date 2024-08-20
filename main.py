@@ -1,8 +1,8 @@
 import numpy as np
 from PINN_Inverse import PINN
 if __name__ == "__main__":
-    layers_u = [3, 40, 40, 40, 1]
-    layers_Diff = [2,16,16,16,1]
+    layers_u = [3, 60, 60, 1]
+    layers_Diff = [2, 32, 32, 1]
     lb = -2.5
     rb = 2.5
     bb = -2.5
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     N_f = 20000
     N_o = 1000
     N_trainsets = 10
-    epochs_ADAM = 2500
-    epochs_LBFGS = 2500
+    epochs_ADAM = 1000
+    epochs_LBFGS = 4000
     model.train(N_o,N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
     model.predict(X_star,n_sources)

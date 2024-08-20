@@ -246,10 +246,10 @@ class PINN:
 
         self.dnn_D.eval()
         diff_coeff = self.diff_coeff(x, y)
-        np.save("Output/Diff_coeff_pred.npy", diff_coeff)
+        np.save("Output/Diff_coeff_pred.npy", diff_coeff[:,:,0].detach().cpu().numpy())
         for self.source_index in range(n_sources):
             u = self.net_u(x, y, t)
             f = self.net_f(x, y, t)
-            np.save("Output/U_"+str(self.source_index)+"_pred.npy",u)
-            np.save("Output/F_"+str(self.source_index)+"_pred.npy",f)
+            np.save("Output/U_"+str(self.source_index)+"_pred.npy",u.detach().cpu().numpy())
+            np.save("Output/F_"+str(self.source_index)+"_pred.npy",f.detach().cpu().numpy())
         return
