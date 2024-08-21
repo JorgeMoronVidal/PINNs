@@ -44,11 +44,11 @@ if __name__ == "__main__":
         u_detectors.append(u_Collocation)
 
     model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
-    N_boundary = 5000
-    N_f = 20000
-    N_o = 1000
+    N_boundary = 4000
+    N_f = 15000
+    N_o = 1250
     N_trainsets = 10
-    epochs_ADAM = 1000
-    epochs_LBFGS = 4000
+    epochs_ADAM = 1500
+    epochs_LBFGS = 3000
     model.train(N_o,N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
     model.predict(X_star,n_sources)
