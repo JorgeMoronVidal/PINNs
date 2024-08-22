@@ -134,7 +134,7 @@ class PINN:
             loss_inner += torch.mean(f_pred ** 2)
 
         loss = (loss_colloc + loss_robin + loss_inner + loss_outliers)
-        if self.epoch % 250 == 0:
+        if self.epoch % 100 == 0:
             print(
                 '%d, %.5e, %.5e. %.5e, %.5e, %.5e' % (
                     self.epoch, loss.item(), loss_outliers.item(), loss_colloc.item(), loss_robin.item(),
@@ -148,7 +148,7 @@ class PINN:
             h_0 = ax_0.imshow(diff_coeff, interpolation='nearest', cmap='rainbow',
                               extent=[self.left_boundary, self.right_boundary,
                               self.bottom_boundary, self.top_boundary], origin='lower', aspect='auto')
-            plt.title("epoch "+str(self.plot_index*250))
+            plt.title("epoch "+str(self.plot_index*100))
             divider_0 = make_axes_locatable(ax_0)
             cax_0 = divider_0.append_axes("right", size="5%", pad=0.10)
             cbar_0 = fig_0.colorbar(h_0, cax=cax_0)
@@ -246,10 +246,14 @@ class PINN:
 
         self.dnn_D.eval()
         diff_coeff = self.diff_coeff(x, y)
+        diff_coeff = diff_coeff.reshape(51,51,251)
         np.save("Output/Diff_coeff_pred.npy", diff_coeff[:,:,0].detach().cpu().numpy())
+        self.x_f = x
+        self.y_f = y
+        self.t_f = t
         for self.source_index in range(n_sources):
             u = self.net_u(x, y, t)
-            f = self.net_f(x, y, t)
+            f = self.net_f()
             np.save("Output/U_"+str(self.source_index)+"_pred.npy",u.detach().cpu().numpy())
             np.save("Output/F_"+str(self.source_index)+"_pred.npy",f.detach().cpu().numpy())
         return

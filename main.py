@@ -31,10 +31,10 @@ if __name__ == "__main__":
                 np.array([T[-1:, :, :].flatten(), ]).T))
 
     X_detectors = np.vstack([xx1, xx2, xx3, xx4, xx5])
-    n_sources = 32
+    n_sources = 16
     u_detectors = []
     for source in range(n_sources):
-        U = np.load("Input/U_" + str(source) + ".npy")
+        U = np.load("Input/U_" + str(source*2) + ".npy")
         u1 = np.array([U[:, :, 0:1].flatten(), ]).T
         u2 = np.array([U[:, 0:1, :].flatten(), ]).T
         u3 = np.array([U[0:1, :, :].flatten(), ]).T
@@ -44,11 +44,11 @@ if __name__ == "__main__":
         u_detectors.append(u_Collocation)
 
     model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
-    N_boundary = 4000
-    N_f = 15000
-    N_o = 1250
-    N_trainsets = 10
-    epochs_ADAM = 1500
-    epochs_LBFGS = 3000
+    N_boundary = 400
+    N_f = 4000
+    N_o = 100
+    N_trainsets = 30
+    epochs_ADAM = 500
+    epochs_LBFGS = 1000
     model.train(N_o,N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
     model.predict(X_star,n_sources)
