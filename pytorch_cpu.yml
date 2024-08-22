@@ -305,5 +305,5 @@ dependencies:
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
   - pip:
-      - pydoe==0.3.8
+      - pydoe==0.3.8  
 prefix: /home/jorge/anaconda3/envs/pytorch_cpu

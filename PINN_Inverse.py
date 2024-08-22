@@ -5,6 +5,7 @@ from itertools import chain
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
+
 class PINN:
     def __init__(self, layers_u, layers_D, lb, rb, tb, bb, ft, n_sources):
 
@@ -125,6 +126,7 @@ class PINN:
         loss_robin = 0.
         loss_inner = 0.
         loss_outliers = torch.mean(self.outliers()**2)
+
         for self.source_index in range(len(self.u_collocation)):
             colloc_bc = self.net_collocation()
             robin_bc = self.net_robin_bc()
@@ -191,7 +193,6 @@ class PINN:
         self.x_o =  torch.tensor(X_o[:, 0:1], requires_grad=True).float().to(self.device)
         self.y_o = torch.tensor(X_o[:, 1:2], requires_grad=True).float().to(self.device)
 
-
     def train(self, N_Robin, N_f, N_o, X_collocation, u_collocation, X_Eval, trainsets, epochs_ADAM, epochs_LBFGS):
         self.x_eval = torch.tensor(np.array([X_Eval[:,0:1].reshape(51,51,251)[:,:,0].flatten(),]).T,requires_grad = True).float().to(self.device)
         self.y_eval = torch.tensor(np.array([X_Eval[:,1:2].reshape(51,51,251)[:,:,0].flatten(),]).T, requires_grad = True).float().to(self.device)
@@ -214,7 +215,7 @@ class PINN:
             parameters_aux = chain(parameters_aux, self.dnn_D.parameters())
             self.update_training_sets(N_Robin, N_f, N_o)
 
-            self.optimizer = torch.optim.Adam(parameters_aux, lr=0.02/(1+trainset), betas=(0.9, 0.999), eps=1e-08,
+            self.optimizer = torch.optim.Adam(parameters_aux, lr=0.04/(1+trainset), betas=(0.9, 0.999), eps=1e-08,
                                  weight_decay=0, amsgrad=False)
             self.epoch = 0
             self.max_epochs = epochs_ADAM
@@ -228,7 +229,7 @@ class PINN:
             self.epoch = 0
             self.optimizer = torch.optim.LBFGS(
                     parameters_aux,
-                    lr=0.75+1.0/(1+trainset),
+                    lr=0.75+2.0/(1+trainset),
                     max_iter=epochs_LBFGS,
                     max_eval=epochs_LBFGS,
                     history_size=100,
@@ -239,6 +240,83 @@ class PINN:
             self.optimizer.step(self.loss_func)
             self.dnn_D.eval()
 
+    def update_training_sets(self, N_Robin, N_f, N_o ,N_c):
+        X_f_train = lhs(3, N_f)
+        X_f_train[:, 0] = self.left_boundary + (self.right_boundary - self.left_boundary) * X_f_train[:, 0]
+        X_f_train[:, 1] = self.bottom_boundary + (self.top_boundary - self.bottom_boundary) * X_f_train[:, 1]
+        X_f_train[:, 2] = X_f_train[:, 2]*self.final_time
+        self.x_f = torch.tensor(X_f_train[:, 0:1], requires_grad=True).float().to(self.device)
+        self.y_f = torch.tensor(X_f_train[:, 1:2], requires_grad=True).float().to(self.device)
+        self.t_f = torch.tensor(X_f_train[:, 2:3], requires_grad=True).float().to(self.device)
+        X_Robin = lhs(3, N_Robin)
+        X_Robin[:, 0] = self.left_boundary + (self.right_boundary - self.left_boundary) * X_Robin[:, 0]
+        X_Robin[:, 1] = self.bottom_boundary + (self.top_boundary - self.bottom_boundary) * X_Robin[:, 1]
+        X_Robin[:, 2] = X_Robin[:, 2] * self.final_time
+        step = int(N_Robin/4)
+        X_Robin [0:step, 0] = self.left_boundary
+        X_Robin[step:2*step, 0] = self.right_boundary
+        X_Robin[2*step:3*step, 1] = self.top_boundary
+        X_Robin[3*step:-1, 1] = self.bottom_boundary
+        self.x_Robin = torch.tensor(X_Robin[:, 0:1], requires_grad=True).float().to(self.device)
+        self.y_Robin = torch.tensor(X_Robin[:, 1:2], requires_grad=True).float().to(self.device)
+        self.t_Robin = torch.tensor(X_Robin[:, 2:3], requires_grad=True).float().to(self.device)
+        ones = torch.ones(self.x_Robin.size())
+        self.bool_top = torch.lt((self.y_Robin - ones * self.top_boundary).abs(), 1e-05).int()
+        self.bool_bottom = torch.lt((self.y_Robin - ones * self.bottom_boundary).abs(), 1e-05).int()
+        self.bool_left = torch.lt((self.x_Robin - ones * self.left_boundary).abs(), 1e-05).int()
+        self.bool_right = torch.lt((self.x_Robin - ones * self.right_boundary).abs(), 1e-05).int()
+        X_o = lhs(2, N_o)
+        X_o[:, 0] = self.left_boundary + (self.right_boundary - self.left_boundary) * X_o[:, 0]
+        X_o[:, 1] = self.bottom_boundary + (self.top_boundary - self.bottom_boundary) * X_o[:, 1]
+        self.x_o =  torch.tensor(X_o[:, 0:1], requires_grad=True).float().to(self.device)
+        self.y_o = torch.tensor(X_o[:, 1:2], requires_grad=True).float().to(self.device)
+        idx_collocation = np.random.choice(self.X_collocation.shape[0], N_c, replace=False)
+        self.x_collocation = torch.tensor(self.X_collocation[idx_collocation, 0:1], requires_grad=True).float().to(self.device)
+        self.y_collocation = torch.tensor(self.X_collocation[idx_collocation, 1:2], requires_grad=True).float().to(self.device)
+        self.t_collocation = torch.tensor(self.X_collocation[idx_collocation, 2:3], requires_grad=True).float().to(self.device)
+        self.u_collocation = []
+        for u in self.U_collocation:
+            self.u_collocation.append(torch.tensor(u[idx_collocation]).float().to(self.device))
+    def train(self, N_Robin, N_f, N_o, N_c, X_collocation, U_collocation, X_Eval, trainsets, epochs_ADAM, epochs_LBFGS):
+        self.x_eval = torch.tensor(np.array([X_Eval[:,0:1].reshape(51,51,251)[:,:,0].flatten(),]).T,requires_grad = True).float().to(self.device)
+        self.y_eval = torch.tensor(np.array([X_Eval[:,1:2].reshape(51,51,251)[:,:,0].flatten(),]).T, requires_grad = True).float().to(self.device)
+        self.X_collocation = X_collocation
+        self.U_collocation = U_collocation
+        for dnn in self.dnns:
+            dnn.train()
+        self.dnn_D.train()
+        self.plot_index = 0
+        for trainset in range(trainsets):
+            parameters_aux = chain([])
+            for dnn in self.dnns:
+                parameters_aux = chain(parameters_aux, dnn.parameters())
+            parameters_aux = chain(parameters_aux, self.dnn_D.parameters())
+            self.update_training_sets(N_Robin, N_f, N_o, N_c)
+
+            self.optimizer = torch.optim.Adam(parameters_aux, lr=0.04/(1+trainset), betas=(0.9, 0.999), eps=1e-08,
+                                 weight_decay=0, amsgrad=False)
+            self.epoch = 0
+            self.max_epochs = epochs_ADAM
+            for i in range(self.max_epochs):
+                self.loss_func() # backprop
+                self.optimizer.step()  # zeroes the gradient buffers of all parameters
+
+            for dnn in self.dnns:
+                parameters_aux = chain(parameters_aux, dnn.parameters())
+            parameters_aux = chain(parameters_aux, self.dnn_D.parameters())
+            self.epoch = 0
+            self.optimizer = torch.optim.LBFGS(
+                    parameters_aux,
+                    lr=0.75+2.0/(1+trainset),
+                    max_iter=epochs_LBFGS,
+                    max_eval=epochs_LBFGS,
+                    history_size=100,
+                    tolerance_grad=1e-7,
+                    tolerance_change=1.0 * np.finfo(float).eps,
+                    line_search_fn="strong_wolfe"  # can be "strong_wolfe"
+                )
+            self.optimizer.step(self.loss_func)
+            self.dnn_D.eval()
     def predict(self, X, n_sources):
         x = torch.tensor(X[:, 0:1], requires_grad=True).float().to(self.device)
         y = torch.tensor(X[:, 1:2], requires_grad=True).float().to(self.device)
