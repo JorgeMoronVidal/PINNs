@@ -29,6 +29,7 @@ class PINN:
         for source_index in range(n_sources):
             self.dnns.append(DNN(layers_u).to(self.device))
         self.dnn_D = DNN(layers_D).to(self.device)
+        #self.dnn_D.activation = torch.nn.ReLU
         #optimizers: using the same settings
         self.epoch = 0
         parameters_aux = chain([])

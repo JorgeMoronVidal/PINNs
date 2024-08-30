@@ -1,8 +1,9 @@
 import numpy as np
-from PINN_Inverse import PINN
+#from PINN_Inverse import PINN
+from PINNs_Inverse_Parameters import PINN
 if __name__ == "__main__":
-    layers_u = [3, 60, 60, 1]
-    layers_Diff = [2, 32, 32, 1]
+    layers_u = [3, 30,30,30, 1]
+    #layers_Diff = [2, 32, 32, 1]
     lb = -2.5
     rb = 2.5
     bb = -2.5
@@ -43,13 +44,14 @@ if __name__ == "__main__":
         u_Collocation = np.vstack([u1, u2, u3, u4, u5])
         u_detectors.append(u_Collocation)
 
-    model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
-    N_boundary = 4000
-    N_f = 15000
-    N_o = 1000
-    N_c = 5000
+    #model = PINN(layers_u, layers_Diff, lb, rb, tb, bb, tf, n_sources)
+    model = PINN(layers_u, [5,5], lb, rb, tb, bb, tf, n_sources)
+    N_boundary = 7500
+    N_f = 20000
+    N_o = 2000
+    N_c = 10000
     N_trainsets = 20
-    epochs_ADAM = 750
+    epochs_ADAM = 1000
     epochs_LBFGS = 1500
     model.train(N_o,N_boundary, N_f, N_c, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
     model.predict(X_star,n_sources)
