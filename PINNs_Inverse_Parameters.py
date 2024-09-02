@@ -31,10 +31,11 @@ class PINN:
         self.params_net = torch.tensor(np.random.normal(0, 1, shape_parameters), requires_grad=True).float().to(
             self.device)
         self.params_net = torch.nn.Parameter(self.params_net)
+        self.dnns[0].register_parameter('params_net', self.params_net)
         self.epoch = 0
         parameters_aux = chain([])
         for dnn in self.dnns:
-            dnn.register_parameter('params_net', self.params_net)
+            #dnn.register_parameter('params_net', self.params_net)
             parameters_aux = chain(parameters_aux, dnn.parameters())
         self.optimizer = torch.optim.Adam(parameters_aux, lr=0.002, betas=(0.9, 0.999), eps=1e-08,
                                               weight_decay=0, amsgrad=False)
