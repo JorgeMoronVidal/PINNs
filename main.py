@@ -53,5 +53,5 @@ if __name__ == "__main__":
     N_trainsets = 20
     epochs_ADAM = 1000
     epochs_LBFGS = 1500
-    model.train(N_o,N_boundary, N_f, N_c, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
+    model.train(N_boundary, N_f, N_c, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
     model.predict(X_star,n_sources)
