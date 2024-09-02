@@ -1,6 +1,0 @@
-/home/pdduser/anaconda3/envs/pytorch_cpu/lib/python3.12/site-packages/torch/_compile.py:24: UserWarning: optimizer contains a parameter group with duplicate parameters; in future, this will cause an error; see github.com/pytorch/pytorch/issues/40967 for more information
-  return torch._dynamo.disable(fn, recursive)(*args, **kwargs)
-Traceback (most recent call last):
-  File "/home/pdduser/PINNs/main.py", line 56, in <module>
-    model.train(N_o,N_boundary, N_f, X_detectors, u_detectors, X_star, N_trainsets, epochs_ADAM, epochs_LBFGS)
-TypeError: PINN.train() missing 1 required positional argument: 'epochs_LBFGS'
