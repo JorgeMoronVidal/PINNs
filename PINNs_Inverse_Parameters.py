@@ -95,7 +95,7 @@ class PINN:
             retain_graph=True,
             create_graph=True
         )[0]
-        u_xx = torch.autograd.grad(
+        """u_xx = torch.autograd.grad(
             diff_coeff*u_x, self.x_f,
             grad_outputs=torch.ones_like(u_x),
             retain_graph=True,
@@ -107,7 +107,26 @@ class PINN:
             retain_graph=True,
             create_graph=True
         )[0]
-        f = u_t - (u_yy + u_xx)
+        f = u_t - (u_yy + u_xx)"""
+        u_xx = torch.autograd.grad(
+            u_x, self.x_f,
+            grad_outputs=torch.ones_like(u_x),
+            retain_graph=True,
+            create_graph=True
+        )[0]
+        u_yy = torch.autograd.grad(
+            u_y, self.y_f,
+            grad_outputs=torch.ones_like(u_y),
+            retain_graph=True,
+            create_graph=True
+        )[0]
+        f = u_t - diff_coeff * (u_yy + u_xx)
+        for gaussian in range(self.params_net.shape[0]):
+            f += self.params_net[gaussian][0] * torch.exp(
+                -0.5 * ((((self.x_f - self.params_net[gaussian][1]) ** 2) / self.params_net[gaussian][3]) +
+                        (((self.y_f - self.params_net[gaussian][2]) ** 2) / self.params_net[gaussian][4]))) * (
+                         (1. / self.params_net[gaussian][3]) * (self.x_f - self.params_net[gaussian][1]) * u_x +
+                         (1. / self.params_net[gaussian][4]) * (self.y_f - self.params_net[gaussian][2]) * u_y)
         return f
 
     def loss_func(self):
